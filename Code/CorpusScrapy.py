@@ -10,7 +10,7 @@ import time
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-
+# 亚马逊
 # positive为好评数量，critical为差评数量，item_num为商品编号
 def getReviewsFromAmazon(positive, critical, item_num):
 	# item_num = re.findall(r'.*amazon.cn.*?/product/(.*?)\?.*?', url, re.S)[0]
@@ -50,6 +50,8 @@ def getReviewsFromAmazon(positive, critical, item_num):
 					print '[Error] can\'t get the page %d' % i
 					print 'Retrying......'
 
+
+# 豆瓣电影评论
 def getReviewFromDouban(url, reviewnum, moviename):
 	loginurl = 'https://www.douban.com/accounts/login'
 	cookie = cookielib.CookieJar()
@@ -119,26 +121,44 @@ def getReviewFromDouban(url, reviewnum, moviename):
 		print response.geturl()
 		print 'Login failed!'
 
+# myscore = {
+# 	u"很差":1,
+# 	u"较差":2,
+# 	u"有用":3,
+# 	u"推荐":4,
+# 	u"力荐":5
+# }
 
-myscore = {
-	u"很差":1,
-	u"较差":2,
-	u"有用":3,
-	u"推荐":4,
-	u"力荐":5
-}
+# 新闻评论：动态网页的话直接从Network里找js生成的url
+def getReviewFromNews(url, savepath):
+	with open(savepath, 'a') as fw:
+		try:
+			user_agent = 'Mozilla/4.0 (compatible; MSIE 5.5; Windows NT)'
+			headers = { 'User-Agent' : user_agent }
+			req = urllib2.Request(url, headers=headers)
+			response = urllib2.urlopen(req)
+			content = response.read()
+			pattern = r'"comment_contents":"(.*?)"'
+			reviews = re.findall(pattern, content, re.S)
+			for review in reviews:
+				fw.write(review.strip().decode('unicode-escape').encode('utf-8') + '\n')
+		except:
+			print 'failed'
+
 
 
 if __name__ == '__main__':
+	# 亚马逊
 	# item_num = r'B00JZ96ZI8'
 	# getReviewsFromAmazon(6755, 444, item_num)
 
-	url = r'https://movie.douban.com/subject/19944106/comments?limit=20&sort=new_score&start='
-	review_number = 125449
-	movie_name = 'meirenyu'
-	getReviewFromDouban(url, review_number, movie_name)
+	# 豆瓣
+	# url = r'https://movie.douban.com/subject/19944106/comments?limit=20&sort=new_score&start='
+	# review_number = 125449
+	# movie_name = 'meirenyu'
+	# getReviewFromDouban(url, review_number, movie_name)
 
-
-
+	# 新闻
+	getReviewFromNews('http://comment.ifeng.com/get.php?callback=newCommentListCallBack&orderby=&docUrl=http%3A%2F%2Fnews.ifeng.com%2Fa%2F20160502%2F48656129_0.shtml&format=js&job=1&p=10&pageSize=20&callback=newCommentListCallBack&skey=d7d4bc', r'../Corpus/news/news_raw.txt')
 
 

@@ -22,15 +22,17 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score
+
+from NeuralNetwork import *
 """
 	功能：利用机器学习方法进行情感分析
 	数据预处理：分词、去停用词
 	特征表示：特征向量空间VSM，选择1gram、1gram和2gram搭配作为特征、1g+2g+3g作为特征
-	特征维度：6000（可调整）
+	特征维度：5000/6000（可调整）
 	特征权重：布尔型（词集模型）
-	特征选择：互信息PMI、卡方统计CHI、文档频率DF
+	特征选择：互信息PMI、卡方统计CHI
 	特征提取：LSI、PCA、FDA
-	分类器：SVM（线性核）、NB（伯努利二元朴素贝叶斯）、DT（分类决策树，ID3,CART）、LR
+	分类器：SVM（线性核）、NB（伯努利二元朴素贝叶斯）、DT（分类决策树，ID3,CART）、LR、NN（神经网络）
 	测试指标：P、R、F1、Accuracy
 """
 
@@ -238,7 +240,8 @@ def DrawPrecisionRecallCurve(truth, pred):
 # 分类器分类、性能测试
 # @params:
 # @mode：如果mode=test，用的是train+devtest，如果mode=final，用的是train+test
-def AccuracyByClassifier(classifier_model, pos_wordlist, neg_wordlist, mode='normal', knum=5):
+def AccuracyByClassifier(classifier_model, pos_wordlist, neg_wordlist, mode='normal', best_topwords=list()):
+	is_network = False
 	# 进行分类
 	if classifier_model in ('svm', 'SVM'):
 		# 线性核的SVM
@@ -252,16 +255,23 @@ def AccuracyByClassifier(classifier_model, pos_wordlist, neg_wordlist, mode='nor
 	elif classifier_model in ('dt', 'DT'):
 		# 决策树
 		classifier_model = DecisionTreeClassifier(criterion='entropy')
-	elif classifier_model in ('gbdt', 'GBDT'):
-		# 梯度提升决策树GBDT
-		classifier_model = GradientBoostingClassifier()
+	# elif classifier_model in ('gbdt', 'GBDT'):
+	#	# 梯度提升决策树GBDT
+	# 	classifier_model = GradientBoostingClassifier()
+	elif classifier_model in ('nn', 'NN'):
+		# 神经网络
+		is_network = True
+		# [len(best_topwords), 30, 2], 30, 5, 0.3->82.6%准确率
+		# Network接口参数说明：神经网络各层神经元个数、迭代次数、分片数据集大小、学习率
+		classifier_model = Network([len(best_topwords), 30, 2], 30, 10, 0.3, best_topwords)
 	else:
 		# 默认用LR
 		classifier_model = LogisticRegression()
 
-	classifier = SklearnClassifier(classifier_model)
+	classifier = SklearnClassifier(classifier_model) if not is_network else classifier_model
 	tp = fp = tn = fn = 0
-	if mode=='k-cross':
+	if len(mode) == 2 and mode[0]=='k-cross':
+		knum = int(mode[1])
 		all_wordlist = pos_wordlist + neg_wordlist
 		shuffle(all_wordlist)
 		precision = recall = F_measure = accuracy = 0.0
@@ -353,7 +363,7 @@ def MLMethod(filepath, classifiertype='LR', featuregram='one', featuredim=6000, 
 		for i, each in enumerate(neg_wordlist):
 			neg_wordlist[i] = (VSMTagging(each, best_topwords), 0)
 		
-		measure_list = AccuracyByClassifier(classifiertype, pos_wordlist, neg_wordlist, mode=testtype, knum=knum)
+		measure_list = AccuracyByClassifier(classifiertype, pos_wordlist, neg_wordlist, mode=testtype, best_topwords=best_topwords)
 		print '查准率：%f\n查全率：%f\nF-测值：%f\n准确率：%f' % (measure_list[0], measure_list[1], measure_list[2], measure_list[3])
 		return measure_list[3]
 
@@ -377,12 +387,13 @@ if __name__ == '__main__':
 	table = list()
 	headers = ['Method']
 	headers.extend(word_num)
-	for i in method_type:
-		table.append([i])
-		for j in word_num:
-			table[-1].append(MLMethod('../Corpus/hotel/file/hotel_final.txt', i, 'one', j, BigramAssocMeasures.chi_sq, 'k-cross', 5)) 
-	
-	print tabulate(table, headers=headers)
+	# for i in method_type:
+	# 	table.append([i])
+	# 	for j in word_num:
+	# 		table[-1].append(MLMethod('../Corpus/hotel/file/hotel_final.txt', i, 'one', j, BigramAssocMeasures.chi_sq, 'k-cross', 5)) 
+	MLMethod('../Corpus/hotel/file/hotel_final.txt', 'NN', 'two', 5000, BigramAssocMeasures.chi_sq, ('k-cross', 5))
+
+	# print tabulate(table, headers=headers)
 
 	# MLMethod('../Corpus/hotel/file/hotel_final.txt', 'MB', 'one', 4000, BigramAssocMeasures.chi_sq, 'k-cross', 5)
 	# MLMethod('../Corpus/hotel/file/hotel_final.txt', 'MB', 'one', 6000, BigramAssocMeasures.chi_sq, 'k-cross', 5)
