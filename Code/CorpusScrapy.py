@@ -149,8 +149,8 @@ def getReviewFromNews(url, savepath):
 
 if __name__ == '__main__':
 	# 亚马逊
-	# item_num = r'B00JZ96ZI8'
-	# getReviewsFromAmazon(6755, 444, item_num)
+	item_num = r'B0052IGZFO'
+	getReviewsFromAmazon(7916, 592, item_num)
 
 	# 豆瓣
 	# url = r'https://movie.douban.com/subject/19944106/comments?limit=20&sort=new_score&start='
@@ -159,6 +159,6 @@ if __name__ == '__main__':
 	# getReviewFromDouban(url, review_number, movie_name)
 
 	# 新闻
-	getReviewFromNews('http://comment.ifeng.com/get.php?callback=newCommentListCallBack&orderby=&docUrl=http%3A%2F%2Fnews.ifeng.com%2Fa%2F20160502%2F48656129_0.shtml&format=js&job=1&p=10&pageSize=20&callback=newCommentListCallBack&skey=d7d4bc', r'../Corpus/news/news_raw.txt')
+	# getReviewFromNews('http://comment.ifeng.com/get.php?callback=newCommentListCallBack&orderby=&docUrl=http%3A%2F%2Fnews.ifeng.com%2Fa%2F20160502%2F48656129_0.shtml&format=js&job=1&p=10&pageSize=20&callback=newCommentListCallBack&skey=d7d4bc', r'../Corpus/news/news_raw.txt')
 
 

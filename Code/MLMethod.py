@@ -31,8 +31,8 @@ from NeuralNetwork import *
 	特征维度：5000/6000（可调整）
 	特征权重：布尔型（词集模型）
 	特征选择：互信息PMI、卡方统计CHI
-	特征提取：LSI、PCA、FDA
-	分类器：SVM（线性核）、NB（伯努利二元朴素贝叶斯）、DT（分类决策树，ID3,CART）、LR、NN（神经网络）
+	特征提取：LSA、PCA、FDA
+	分类器：SVM（线性核）、NB（伯努利朴素贝叶斯）、MB（多项式朴素贝叶斯）、DT（分类决策树，ID3,CART）、LR、NN（神经网络）
 	测试指标：P、R、F1、Accuracy
 """
 
@@ -151,7 +151,7 @@ def Mixup3Feature(word_list, bi_method=BigramAssocMeasures.chi_sq,\
 # type
 # one:仅用词作为特征
 # two:用词和二元组作为特征
-# three:用词+二元组+三元组作为特征
+# three:用一元组+二元组+三元组作为特征
 # n:特征维数
 def FeatureChoose(pos_wordlist, neg_wordlist, method=BigramAssocMeasures.chi_sq, featuregram='one', n=6000):
 	pos_feature = list()
@@ -302,7 +302,7 @@ def AccuracyByClassifier(classifier_model, pos_wordlist, neg_wordlist, mode='nor
 		# DrawPrecisionRecallCurve(real, pred)
 
 		return (precision/knum, recall/knum, F_measure/knum, accuracy/knum)
-	elif mode=='normal':
+	elif mode[0]=='normal':
 		# 分出训练集和测试集
 		pos_len = len(pos_wordlist)
 		neg_len = len(neg_wordlist)
@@ -331,13 +331,14 @@ def AccuracyByClassifier(classifier_model, pos_wordlist, neg_wordlist, mode='nor
 		recall = float(tp)/(tp+fn)
 		F_measure = 2.0/((1/precision) + (1/recall))
 		accuracy = float(tp + tn) / (tp + fp + tn + fn)
+		# print tp, fp, tn, fn
 		# DrawPrecisionRecallCurve(real, pred)
 		return (precision, recall, F_measure, accuracy, classifier)
 	else:
 		return (0, 0, 0, 0, 0)
 
 # 情感分析
-def MLMethod(filepath, classifiertype='LR', featuregram='one', featuredim=6000, method=BigramAssocMeasures.chi_sq, testtype='normal', knum=5):
+def MLMethod(filepath, classifiertype='LR', featuregram='one', featuredim=6000, method=BigramAssocMeasures.chi_sq, mode=('normal', 5)):
 	with open(filepath) as fr:
 		pos_wordlist = list()
 		neg_wordlist = list()
@@ -363,9 +364,9 @@ def MLMethod(filepath, classifiertype='LR', featuregram='one', featuredim=6000, 
 		for i, each in enumerate(neg_wordlist):
 			neg_wordlist[i] = (VSMTagging(each, best_topwords), 0)
 		
-		measure_list = AccuracyByClassifier(classifiertype, pos_wordlist, neg_wordlist, mode=testtype, best_topwords=best_topwords)
-		print '查准率：%f\n查全率：%f\nF-测值：%f\n准确率：%f' % (measure_list[0], measure_list[1], measure_list[2], measure_list[3])
-		return measure_list[3]
+		measure_list = AccuracyByClassifier(classifiertype, pos_wordlist, neg_wordlist, mode=mode, best_topwords=best_topwords)
+		# print '查准率：%f\n查全率：%f\nF-测值：%f\n准确率：%f' % (measure_list[0], measure_list[1], measure_list[2], measure_list[3])
+		return measure_list
 
 if __name__ == '__main__':
 	reload(sys)
@@ -378,22 +379,83 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	# For Project
-	# MLMethod(args.filepath, args.classifiertype, args.featuregram)
+	# MLMethod(args.filepath, args.classifiertype, args.featuregram, 5000, BigramAssocMeasures.chi_sq, mode=('k-cross', 5))
 
 	# For Test
-	word_num = [500, 1000, 2000, 4000, 6000, 8000, 10000]
+	trig = True
+	word_num = [500, 2000, 5000, 8000]
 	feature_type = ['one', 'two', 'three']
-	method_type = ['BB', 'MB', 'DT', 'SVM']
-	table = list()
-	headers = ['Method']
-	headers.extend(word_num)
+	method_type = ['BB', 'MB', 'DT', 'SVM', 'NN']
+	filepath_all = ['../Corpus/amazon/elec.txt', '../Corpus/amazon/book.txt', '../Corpus/douban/meirenyu_final.txt', '../Corpus/hotel/file/hotel_final.txt', '../Corpus/news/news_final.txt']
+	# filepath_all = ['../Corpus/amazon/elec.txt', '../Corpus/amazon/book.txt']
+	if trig:
+		# 特征类型测试
+		# with open('../Result/ML_featuretype_test.txt', 'w') as fw:
+		# 	for fp in filepath_all:
+		# 		for method in method_type:
+		# 			res_list = list()
+		# 			for feature in feature_type:
+		# 				measure_list = MLMethod(fp, method, feature, 5000, BigramAssocMeasures.chi_sq, ('k-cross', 5))
+		# 				res_list.append(measure_list[:4])
+		# 			res_list = zip(*res_list)
+		# 			print res_list
+		# 			for each in res_list:
+		# 				for i in each:
+		# 					fw.write(('%.4f' % round(i, 4)) + '\n')
+		# 			fw.write('\n')
+
+		# 特征选择方法测试
+		with open('../Result/ML_featurechoose_test.txt', 'w') as fw:
+			for fp in filepath_all:
+				for method in method_type:
+					res_list = list()
+					measure_list = MLMethod(fp, method, 'two', 5000, BigramAssocMeasures.chi_sq, ('k-cross', 5))
+					res_list.append(measure_list[:4])
+					measure_list = MLMethod(fp, method, 'two', 5000, BigramAssocMeasures.pmi, ('k-cross', 5))
+					res_list.append(measure_list[:4])
+					res_list = zip(*res_list)
+					print res_list
+					for each in res_list:
+						for i in each:
+							fw.write(('%.4f' % round(i, 4)) + '\n')
+					fw.write('\n')
+
+		# 特征维度测试
+		# with open('../Result/ML_featuredim_test.txt', 'w') as fw:
+		# 	for fp in filepath_all:
+		# 		for method in method_type:
+		# 			res_list = list()
+		# 			for num in word_num:
+		# 				measure_list = MLMethod(fp, method, 'two', num, BigramAssocMeasures.chi_sq, ('k-cross', 5))
+		# 				res_list.append(measure_list[:4])
+		# 			res_list = zip(*res_list)
+		# 			print res_list
+		# 			for each in res_list:
+		# 				for i in each:
+		# 					fw.write(('%.4f' % round(i, 4)) + '\n')
+		# 			fw.write('\n')
+
+
+	# table = list()
+	# headers = ['Method']
+	# headers.extend(word_num)
 	# for i in method_type:
 	# 	table.append([i])
 	# 	for j in word_num:
 	# 		table[-1].append(MLMethod('../Corpus/hotel/file/hotel_final.txt', i, 'one', j, BigramAssocMeasures.chi_sq, 'k-cross', 5)) 
-	MLMethod('../Corpus/hotel/file/hotel_final.txt', 'NN', 'two', 5000, BigramAssocMeasures.chi_sq, ('k-cross', 5))
+	# MLMethod('../Corpus/hotel/file/hotel_final.txt', 'NN', 'two', 5000, BigramAssocMeasures.chi_sq, ('k-cross', 5))
 
 	# print tabulate(table, headers=headers)
+
+
+
+
+
+
+
+
+
+
 
 	# MLMethod('../Corpus/hotel/file/hotel_final.txt', 'MB', 'one', 4000, BigramAssocMeasures.chi_sq, 'k-cross', 5)
 	# MLMethod('../Corpus/hotel/file/hotel_final.txt', 'MB', 'one', 6000, BigramAssocMeasures.chi_sq, 'k-cross', 5)

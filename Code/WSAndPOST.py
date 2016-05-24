@@ -96,6 +96,6 @@ if __name__ == '__main__':
 	parser.add_argument('--startline', dest='startline')
 	parser.add_argument('--addtype', dest='addtype')
 	args = parser.parse_args()
-	# WSofFile(args.filepath, args.savepath, args.wstype, args.startline, args.addtype)
+	WSofFile(args.filepath, args.savepath, args.wstype, int(args.startline), args.addtype)
 
 
