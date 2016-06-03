@@ -294,9 +294,11 @@ def AccuracyByClassifier(classifier_model, pos_wordlist, neg_wordlist, mode='nor
 					fn += 1
 				elif int(each[1]) != int(pre) and int(each[1]) == 0:
 					fp += 1
-			precision += float(tp)/(tp+fp)
-			recall += float(tp)/(tp+fn)
-			F_measure += 2.0/((1/precision) + (1/recall))
+			cur_precision = float(tp)/(tp+fp)
+			precision += cur_precision
+			cur_recall = float(tp)/(tp+fn)
+			recall += cur_recall
+			F_measure += 2.0/((1/cur_precision) + (1/cur_recall))
 			accuracy += float(tp + tn) / (tp + fp + tn + fn)
 
 		# DrawPrecisionRecallCurve(real, pred)
@@ -365,8 +367,8 @@ def MLMethod(filepath, classifiertype='LR', featuregram='one', featuredim=6000, 
 			neg_wordlist[i] = (VSMTagging(each, best_topwords), 0)
 		
 		measure_list = AccuracyByClassifier(classifiertype, pos_wordlist, neg_wordlist, mode=mode, best_topwords=best_topwords)
-		# print '查准率：%f\n查全率：%f\nF-测值：%f\n准确率：%f' % (measure_list[0], measure_list[1], measure_list[2], measure_list[3])
-		return measure_list
+		print '查准率：%f\n查全率：%f\nF-测值：%f\n准确率：%f' % (measure_list[0], measure_list[1], measure_list[2], measure_list[3])
+		# return measure_list
 
 if __name__ == '__main__':
 	reload(sys)
@@ -379,10 +381,10 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	# For Project
-	# MLMethod(args.filepath, args.classifiertype, args.featuregram, 5000, BigramAssocMeasures.chi_sq, mode=('k-cross', 5))
+	MLMethod(args.filepath, args.classifiertype, args.featuregram, 5000, BigramAssocMeasures.chi_sq, mode=('k-cross', 5))
 
 	# For Test
-	trig = True
+	trig = False
 	word_num = [500, 2000, 5000, 8000]
 	feature_type = ['one', 'two', 'three']
 	method_type = ['BB', 'MB', 'DT', 'SVM', 'NN']
