@@ -57,8 +57,8 @@ def getReviewFromDouban(url, reviewnum, moviename):
 	cookie = cookielib.CookieJar()
 	opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
 	params = {
-		"form_email":"l11x0m7@gmail.com",
-		"form_password":"lin62870502",
+		"form_email":your email,
+		"form_password":your password,
 		"source":"index_nav" #没有的话登录不成功
 	}
 	#从首页提交登录
